@@ -1,0 +1,5 @@
+gradio==4.31.5
+nltk==3.8.1
+openai==1.30.3
+tiktoken==0.5.2
+trl==0.12.0
