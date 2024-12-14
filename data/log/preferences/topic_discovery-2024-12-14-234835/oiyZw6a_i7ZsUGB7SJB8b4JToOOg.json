@@ -1,0 +1,216 @@
+[
+    {
+        "chunks": [
+            {
+                "begin_dialog_id": 0,
+                "end_dialog_id": 12,
+                "topic": "Nested Named Entity Recognition",
+                "personal_profile": [],
+                "response_format": [
+                    "The user prefers detailed explanations and examples, possibly with code."
+                ]
+            },
+            {
+                "begin_dialog_id": 13,
+                "end_dialog_id": 16,
+                "topic": "Java Programming Challenges",
+                "personal_profile": [
+                    "The user is proficient in Java programming."
+                ],
+                "response_format": [
+                    "The user prefers clear solutions, possibly with code."
+                ]
+            },
+            {
+                "begin_dialog_id": 18,
+                "end_dialog_id": 21,
+                "topic": "Machine Learning Models",
+                "personal_profile": [],
+                "response_format": [
+                    "The user prefers technical comparisons and explanations."
+                ]
+            },
+            {
+                "begin_dialog_id": 64,
+                "end_dialog_id": 67,
+                "topic": "SQL Commands and Functions",
+                "personal_profile": [
+                    "The user has knowledge of SQL."
+                ],
+                "response_format": [
+                    "The user prefers practical examples and explanations."
+                ]
+            },
+            {
+                "begin_dialog_id": 122,
+                "end_dialog_id": 126,
+                "topic": "Java and Programming Concepts",
+                "personal_profile": [
+                    "The user is interested in deep technical details and comparisons in Java."
+                ],
+                "response_format": [
+                    "The user prefers concise and direct answers."
+                ]
+            }
+        ]
+    },
+    {
+        "chunks": [
+            {
+                "begin_dialog_id": 190,
+                "end_dialog_id": 204,
+                "topic": "Java Programming Challenges",
+                "personal_profile": [
+                    "The user is involved in programming challenges and uses Java for solutions."
+                ],
+                "response_format": [
+                    "The user expects code solutions."
+                ]
+            },
+            {
+                "begin_dialog_id": 205,
+                "end_dialog_id": 220,
+                "topic": "Java and Software Engineering Concepts",
+                "personal_profile": [
+                    "The user is knowledgeable in Java programming.",
+                    "The user is familiar with software engineering concepts like Spring, threading, and data structures."
+                ],
+                "response_format": []
+            },
+            {
+                "begin_dialog_id": 249,
+                "end_dialog_id": 266,
+                "topic": "Algorithm and Problem-Solving Tasks",
+                "personal_profile": [
+                    "The user is interested in solving algorithmic problems.",
+                    "The user prefers using Java for coding solutions."
+                ],
+                "response_format": [
+                    "The user wants detailed algorithmic solutions."
+                ]
+            }
+        ]
+    },
+    {
+        "chunks": [
+            {
+                "begin_dialog_id": 281,
+                "end_dialog_id": 286,
+                "topic": "Spring Framework",
+                "personal_profile": [],
+                "response_format": [
+                    "The user is reviewing and verifying knowledge about Spring framework concepts."
+                ]
+            },
+            {
+                "begin_dialog_id": 299,
+                "end_dialog_id": 301,
+                "topic": "Linux Commands",
+                "personal_profile": [],
+                "response_format": [
+                    "The user is interested in understanding specific Linux command functionalities like memory display."
+                ]
+            },
+            {
+                "begin_dialog_id": 323,
+                "end_dialog_id": 326,
+                "topic": "String Expression Calculation",
+                "personal_profile": [],
+                "response_format": [
+                    "The user wants solutions implemented in Java, focusing on string manipulation and arithmetic operations."
+                ]
+            },
+            {
+                "begin_dialog_id": 328,
+                "end_dialog_id": 334,
+                "topic": "Hive and SQL",
+                "personal_profile": [],
+                "response_format": []
+            }
+        ]
+    },
+    {
+        "chunks": [
+            {
+                "begin_dialog_id": 400,
+                "end_dialog_id": 405,
+                "topic": "Java Programming Tasks",
+                "personal_profile": [
+                    "The user frequently solves programming problems using Java."
+                ],
+                "response_format": [
+                    "The user prefers specific coding solutions in Java."
+                ]
+            },
+            {
+                "begin_dialog_id": 411,
+                "end_dialog_id": 415,
+                "topic": "Programming Concepts and NER",
+                "personal_profile": [],
+                "response_format": [
+                    "The user wants explanations on programming concepts and projects."
+                ]
+            },
+            {
+                "begin_dialog_id": 420,
+                "end_dialog_id": 424,
+                "topic": "Workplace and Personal Development",
+                "personal_profile": [
+                    "The user has engaged in professional practice and seeks improvement in work and lifestyle."
+                ],
+                "response_format": [
+                    "The user prefers reflective and insightful discussions."
+                ]
+            },
+            {
+                "begin_dialog_id": 428,
+                "end_dialog_id": 432,
+                "topic": "Natural Language Processing and Java Concepts",
+                "personal_profile": [
+                    "The user is engaged in research on natural language processing, particularly in named entity recognition."
+                ],
+                "response_format": [
+                    "The user prefers detailed technical explanations related to NLP and Java."
+                ]
+            },
+            {
+                "begin_dialog_id": 461,
+                "end_dialog_id": 475,
+                "topic": "Java Design Patterns",
+                "personal_profile": [
+                    "The user is knowledgeable about Java and interested in design patterns."
+                ],
+                "response_format": [
+                    "The user prefers detailed explanations and examples concerning design patterns."
+                ]
+            }
+        ]
+    },
+    {
+        "chunks": [
+            {
+                "begin_dialog_id": 501,
+                "end_dialog_id": 511,
+                "topic": "Java Collections and Thread Safety",
+                "personal_profile": [],
+                "response_format": []
+            },
+            {
+                "begin_dialog_id": 512,
+                "end_dialog_id": 625,
+                "topic": "Java Concurrency and Performance",
+                "personal_profile": [],
+                "response_format": []
+            },
+            {
+                "begin_dialog_id": 635,
+                "end_dialog_id": 648,
+                "topic": "Image Upload and Data Processing in Java",
+                "personal_profile": [
+                    "The user is interested in Java programming and solving algorithmic problems."
+                ],
+                "response_format": []
+            }
+        ]
+    }
+]
