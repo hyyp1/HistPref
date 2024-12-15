@@ -1,0 +1,1122 @@
+
+Now your goal is to accomplish topic discovery and user preference extraction task from a long dialog history. Let's beirfly describe your task:
+
+1) Input: You will be presented with a long, multiturn dialog between a user and an assistant. You can only see the user's queries.
+2) Your task: 
+a) Firstly, you need to partition the whole dialog into multiple chunks by topics: consecutive dialogs about same topic should be put into the same chunk.
+- Every dialog within the same chunk is about the same topic and discusses the same matter!!
+- The chunk is represented by two [Dialog ID] shown in the dialog history, so the messages between these two [Dialog ID] is a chunk.
+- The chunk should begin with a query INDEPENDENT of previous dialog content, which makes the following dialog distinct from previous dialog. 
+- If a topic has fewer than three dialog turns, do not consider it.
+b) Next, for each recommended chunk, generate the following content with English: 
+i) Give a BRIEF topic of this dialog chunk. (`topic`)
+ii) Give the beginning and end dialog ID, be accurate. (`begin_dialog_id` and `end_dialog_id`)
+iii) Extract the user's some key personal information, such as location, job details, interests and hobbies, family background, health status and so on FROM dialogs in this chunk: (`personal_profile`)
+iv) Extract how formal or casual the assistant's response should be, how long or short responses should generally be, and what type of solutions or information the user prefers to receive FROM dialogs in this chunk: (`response_format`)
+
+
+Output your response in this format. 
+
+------------
+
+```json
+{"chunks":[
+{
+"begin_dialog_id": xxx,
+"end_dialog_id": xxx,
+"topic": "here is the topic of this chunk",
+"personal_profile": ["xxx","xxx",...],
+"response_format": ["xxx","xxx",...]
+},
+{
+"begin_dialog_id": xxx,
+"end_dialog_id": xxx,
+"topic": "here is the topic of this chunk",
+"personal_profile": ["xxx","xxx",...],
+"response_format": ["xxx","xxx",...]
+}
+]}
+```
+------------
+
+Give you three examples for reference:
+
+Here is the dialogue history of the input for the first example:
+
+[Dialog ID]: 0
+[User]: hi
+ 
+[Dialog ID]: 1
+[User]: hi
+ 
+[Dialog ID]: 2
+[User]: how to pick a study abroad agency?
+ 
+[Dialog ID]: 3
+[User]: I want to find a study abroad agent, how to choose
+ 
+[Dialog ID]: 4
+[User]: 3d medical image stitching, stitching based on the continuity of the structure, to align, what are the possible ideas?
+ 
+[Dialog ID]: 5
+[User]: Since each piece of my image is 150*3000*3000, and there are only 50 pieces in total, how can I achieve this based on deep learning? The problem is no network could eat a tensor that big, right? For your reference
+
+[Dialog ID]: 6
+[User]: My idea is to pre-train a Masked autoencoder that can encode 32*32*32 images, and then finetune this MAE to train a Mosaic quality reward model. It is then used for optimization based splicing. What do you think? Analyze the possible difficulties, MAE has been trained and come up with a more feasible plan.
+
+[Dialog ID]: 7
+[User]: I trained another larger masked autoencoder, 64*64*64, which is good for large-scale object reconstruction
+
+[Dialog ID]: 8
+[User]: What good, highly actionable insights do you have about the construction of a splice reward model
+ 
+[Dialog ID]: 9
+[User]: What are rigid and non-rigid transformations in computer vision/image processing, explain that I am a beginner
+ 
+[Dialog ID]: 10
+[User]: The data I have obtained is obtained by imaging the slices of mouse brain cut out by a slicing machine. It is said that the loss between the two slices is about 1 micron, and the thickness of each brain slice is 300 microns. Will this situation produce non-rigid transformation? The microtome vibrates at high speed
+
+[Dialog ID]: 11
+[User]: pytorch uses non-rigid deformation field to realize the splicing of two (150, 300, 300) tensor brain slices. The deformation field is variable and can be changed, so it is OK to write a prototype. In the future, some loss needs to be calculated and backpropagation optimization.
+
+[Dialog ID]: 12
+[User]: You mean keep slice2 the same, and then only change slice1, right, and then what's the loss, assuming loss is an nn.Module, complete the code, including backpropagation
+
+[Dialog ID]: 13
+[User]: How exactly is affine_grid implemented, the principle and motivation, and is it a linear transformation?
+
+[Dialog ID]: 14
+[User]: I would like to ask if there is anything in torch that can implement a similar "surface" transformation
+ 
+[Dialog ID]: 15
+[User]: How to generate a nonlinear deformation field randomly
+ 
+[Dialog ID]: 16
+[User]: For such a nonlinear deformation field, how to optimize by calculating my given loss and write a complete optimization code
+
+[Dialog ID]: 17
+[User]: I want to also make sure that this deformation field is smooth, as you just pointed out
+ 
+[Dialog ID]: 18
+[User]: After slice1 transformation, how to combine two 3D images to calculate loss? discuss
+ 
+[Dialog ID]: 19
+[User]: How do you deal with the coordinates of two 3D images? Any uniform coordinates?
+ 
+[Dialog ID]: 20
+[User]: How do you implement global coordinates in pytorch? One of my ideas is to create a (300,3000,3000) coordinate system, two (150,3000,3000) stack, then let slice1 position unchanged, and then slice2 after nonlinear deformation to write (300,3000,3000) coordinate system, is this feasible? If you have a better suggestion, please give it to me and implement it
+
+[Dialog ID]: 21
+[User]: Hello, I want to travel this weekend, please recommend some places for me
+
+
+[Dialog ID]: 22
+[User]: I work in Beijing. I recommend places around Beijing
+
+[Dialog ID]: 23
+[User]: I don't like sports very much, is there a place to play less exercise
+
+[Dialog ID]: 24
+[User]: Can you visit all these places in one day
+
+[Dialog ID]: 25
+[User]: Is Wat Pho crowded on weekends
+
+ 
+Here is the output response of the first example:
+ 
+```json
+{"chunks":[
+{
+"begin_dialog_id": 4,
+"end_dialog_id": 8,
+"topic": "Image Processing",
+"personal_profile": ["The user has a basic understanding of computers."],
+"response_format": ["The user prefers to receive highly feasible solutions."]
+},
+{
+"begin_dialog_id": 9,
+"end_dialog_id": 20,
+"topic": "Computer Vision",
+"personal_profile": ["The user has a basic understanding of computers.","The user is a beginner in the field of computer vision/image processing."],
+"response_format": []
+},
+{
+"begin_dialog_id": 21,
+"end_dialog_id": 25,
+"topic": "Travel Recommendation",
+"personal_profile": ["The user works in Beijing.","The user does not like sports."],
+"response_format": []
+}
+]}
+```
+
+Here is the dialogue history of the input for the second example:
+
+[Dialog ID]: 0
+[User]: If I have a headache, what might be causing it
+ 
+[Dialog ID]: 1
+[User]: What are the ways to relieve migraines, please list one by one
+ 
+[Dialog ID]: 2
+[User]: Where do I need to press for a massage
+ 
+[Dialog ID]: 3
+[User]: What medications can be used to treat it
+ 
+[Dialog ID]: 4
+[User]: Tell a joke
+ 
+[Dialog ID]: 5
+[User]: Ahh... It's not funny.
+ 
+[Dialog ID]: 6
+[User]: What problems should be paid attention to when climbing the mountain? Please list them one by one
+ 
+[Dialog ID]: 7
+[User]: Please list what food you can take with you on the mountain
+ 
+[Dialog ID]: 8
+[User]: In addition to the above, what do you need to pay special attention to mountain climbing in summer
+ 
+[Dialog ID]: 9
+[User]: Please tell me some first aid measures for heat stroke
+ 
+[Dialog ID]: 10
+[User]: What if you get lost with your friends while climbing
+ 
+[Dialog ID]: 11
+[User]: Okay, thank you
+
+ 
+Here is the output response of the second example:
+ 
+```json
+{"chunks":[
+{
+"begin_dialog_id": 0,
+"end_dialog_id": 3,
+"topic": "Health Consultation",
+"personal_profile": [],
+"response_format": ["The user wants answers listed point by point."]
+},
+{
+"begin_dialog_id": 6,
+"end_dialog_id": 11,
+"topic": "Mountain Climbing Precautions",
+"personal_profile": [],
+"response_format": ["The user wants answers listed point by point."]
+}
+]}
+```
+
+Here is the dialogue history of the input for the third example:
+
+[Dialog ID]: 0
+[User]: Recently, I have some spare money, and I want to do some investment and financial management, but I don't know how to start. Do you have any suggestions?
+ 
+[Dialog ID]: 1
+[User]: I mainly want to save some money for my children's education, the goal is about ten years. Personally, I prefer a sound investment and don't like to take risks very much. While the returns may not be as high, I value the safety of my money more.
+
+[Dialog ID]: 2
+[User]: It is best to control it within 10%, of course, if it can be more robust, about 5% is better. I'm usually busy at work, so I probably don't have the energy to constantly monitor and adjust my portfolio, and I don't want to devote too much time to research
+
+[Dialog ID]: 3
+[User]: Will it rain tomorrow
+ 
+[Dialog ID]: 4
+[User]: Plan a route from Chengdu to Lhasa
+
+ 
+Here is the output response of the third example:
+ 
+```json
+{"chunks":[
+{
+"begin_dialog_id": 0,
+"end_dialog_id": 2,
+"topic": "Investment / Financing",
+"personal_profile": ["The user values family and has school-aged children.", "The user has a stable financial situation with some savings.", "The user has a busy work schedule and a fast-paced lifestyle."],
+"response_format": ["The user prefers a cautious decision-making style.", "The user prefers content that is hassle-free and easy to manage."]
+}
+]}
+```
+
+Here is the dialog history:
+[Dialog ID]: 487
+[User]: 如下哪个特性功能不用于数据的查询优化? (()
+A	并行查询	
+B 分区
+C 视图
+D	索引
+
+
+[Dialog ID]: 488
+[User]: 关于数据库的事务，以下错误的是()
+
+A 事务具有原子性，事务是逻辑工作的基本单位
+B	事务具有持续性，一旦提交永久的改变数据库的数据	
+
+C事务具有隔离性，所以不会引发死锁
+
+D事务具有一致性，事务会中的操作要么全做，要么全不做
+
+
+[Dialog ID]: 489
+[User]: 关于主键，描述错误的是()
+A	一个表可以有多个主键	
+B	主键就是允许重复	
+C可以有多个属性联合组成主键
+D	主键是可以为空的
+
+
+[Dialog ID]: 490
+[User]: 一个表可以有多个主键么
+
+
+[Dialog ID]: 491
+[User]: 关于groupby子句的作用描述正确的是()
+A	可用于过滤数据	
+B	可用于having子句	
+可用于avg
+D	可用于sum
+
+
+[Dialog ID]: 492
+[User]: 关于数据库，下列描述中，正确的是
+A	having和where都是用来筛选用的，having是筛选组，而where是筛选记录	
+B	数据库设计的三大范式当中，第二范式要求一个数据库表中不包含已在其他表中包含的非主关键字信息	
+C	在sql中，关键字delete表示直接删除表，而drop表示删除表中数据	
+
+D在数据库设计中，一个多对多的关系可通过一个中间表分为两个一对多的关系
+
+E主键是能确定一条记录的唯一标识，不能有重复，允许为空
+
+
+[Dialog ID]: 493
+[User]: 为了提高数据的查询效率，需要在数据库中建立索引，则下列设计索引的原则描述正确的是()
+A
+在频繁进行排序或分组(即进行group by或orderby操作)的列上建立索引
+B	在表中，索引越多越好	
+
+C  在select关键字后选择列表的列上，建立索引
+D	考虑列中值的分布，列的基数越大，索引的效果越好
+
+
+[Dialog ID]: 494
+[User]: 在MySQL中，关于HASH索引，下列描述正确的是()
+A	只用于使用=或者<=>操作符的等式比较	
+B	只能使用整个关键字来搜索一行	
+C
+如果将一个MyISAM表改为HASH索引的MEMORY表，不会影响查询的执行效率
+
+D 优化器不能使用HASH索引来加速OrderBy操作
+
+
+[Dialog ID]: 495
+[User]: 有关聚集索引的描述，说法正确的是?
+
+A有存储实际数据
+
+B可以用B树实现
+
+C 可以用二叉排序树实现
+
+D没有存储实际数据
+
+E 逻辑上连续
+
+F 物理上连续
+
+
+[Dialog ID]: 496
+[User]: 聚集索引
+
+
+[Dialog ID]: 497
+[User]: 聚集索引可以用B树实现
+
+
+[Dialog ID]: 498
+[User]: 聚集索引在物理上连续么
+
+
+[Dialog ID]: 499
+[User]: having是用来筛选组的么
+
+
+[Dialog ID]: 500
+[User]: 10.mysql数据库中一张user表中，其中包含字段ABC.字段类型如下:A:intB:intC;int根据字段AB.C按照ABC顺序建立复合
+idx_A_B_C,以下查询语句中使用到索引idx_A_B_C的语句有哪些?
+A	select *from user where A=1 and B=1	
+B	select *from user where A=1 and C=1	
+
+select *from user where B=1 and C=1
+D	select *from user where 1=1 and A=1 and B=1
+
+
+[Dialog ID]: 501
+[User]: 讲一下代理模式
+
+
+[Dialog ID]: 502
+[User]: ArrayList的扩容机制
+
+
+[Dialog ID]: 503
+[User]: 如何解决ArrayList线程不安全问题
+
+
+[Dialog ID]: 504
+[User]: hashset是如何检查重复的
+
+
+[Dialog ID]: 505
+[User]: 当hashset中出现哈希冲突时，是如何解决的
+
+
+[Dialog ID]: 506
+[User]: 如何解决HashMap的线程不安全问题
+
+
+[Dialog ID]: 507
+[User]: 线程的创建方式
+
+
+[Dialog ID]: 508
+[User]: 使用实现callable接口的方式创建线程
+
+
+[Dialog ID]: 509
+[User]: 使用线程池的方式创建线程
+
+
+[Dialog ID]: 510
+[User]: 直接调用run方法可以么
+
+
+[Dialog ID]: 511
+[User]: 实现生产者与消费者模式
+
+
+[Dialog ID]: 512
+[User]: 线程池的创建方式
+
+
+[Dialog ID]: 513
+[User]: 为什么不建议使用Executors创建线程池
+
+
+[Dialog ID]: 514
+[User]: java并发编程中的锁
+
+
+[Dialog ID]: 515
+[User]: 什么是CAS
+
+
+[Dialog ID]: 516
+[User]: ABA问题是什么问题
+
+
+[Dialog ID]: 517
+[User]: 什么是同步
+
+
+[Dialog ID]: 518
+[User]: volatile关键字
+
+
+[Dialog ID]: 519
+[User]: 讲一下sychronized
+
+
+[Dialog ID]: 520
+[User]: synchronized和volatile的区别
+
+
+[Dialog ID]: 521
+[User]: sychronized的锁升级过程
+
+
+[Dialog ID]: 522
+[User]: synchronized底层原理
+
+
+[Dialog ID]: 523
+[User]: 讲一下lock
+
+
+[Dialog ID]: 524
+[User]: 三次握手的时候可以进行数据传输么
+
+
+[Dialog ID]: 525
+[User]: http和https协议的区别
+
+
+[Dialog ID]: 526
+[User]: 讲一下futureTask
+
+
+[Dialog ID]: 527
+[User]: futureTask的get方法调用失败会返回什么
+
+
+[Dialog ID]: 528
+[User]: 讲一下Lock
+
+
+[Dialog ID]: 529
+[User]: 讲一下ReentrantLock
+
+
+[Dialog ID]: 530
+[User]: ReentrantLock的底层原理
+
+
+[Dialog ID]: 531
+[User]: ReentrantLock如何实现可重入
+
+
+[Dialog ID]: 532
+[User]: 讲一下java并发容器
+
+
+[Dialog ID]: 533
+[User]: 讲一下JUC
+
+
+[Dialog ID]: 534
+[User]: 讲一下双重校验锁实现的单例模式
+
+
+[Dialog ID]: 535
+[User]: 讲一下AQS的底层原理
+
+
+[Dialog ID]: 536
+[User]: 讲一下CountDownLatch
+
+
+[Dialog ID]: 537
+[User]: 讲一下CyclicBarrier
+
+
+[Dialog ID]: 538
+[User]: CyclicBarrier和countdownLatch的区别
+
+
+[Dialog ID]: 539
+[User]: 讲一下ThreadLocal
+
+
+[Dialog ID]: 540
+[User]: 讲一下java内存模型
+
+
+[Dialog ID]: 541
+[User]: Http和https区别
+
+
+[Dialog ID]: 542
+[User]: HTTPS加密流程
+
+
+[Dialog ID]: 543
+[User]: 重传机制
+
+
+[Dialog ID]: 544
+[User]: 快重传
+
+
+[Dialog ID]: 545
+[User]: 快重传是如何检测丢失的数据包
+
+
+[Dialog ID]: 546
+[User]: http1.0和http1.1
+
+
+[Dialog ID]: 547
+[User]: http1.0和http1.1区别
+
+
+[Dialog ID]: 548
+[User]: http缓存和请求头
+
+
+[Dialog ID]: 549
+[User]: 讲一下STW
+
+
+[Dialog ID]: 550
+[User]: 及那个一下java内存区域
+
+
+[Dialog ID]: 551
+[User]: 讲一下对象的创建过程
+
+
+[Dialog ID]: 552
+[User]: 讲一下JVM垃圾回收
+
+
+[Dialog ID]: 553
+[User]: 讲一下垃圾回收算法
+
+
+[Dialog ID]: 554
+[User]: 讲一下垃圾回收算法
+
+
+[Dialog ID]: 555
+[User]: hotSpot为什么要分新生代和老年代
+
+
+[Dialog ID]: 556
+[User]: 讲一下垃圾回收器
+
+
+[Dialog ID]: 557
+[User]: 讲一下垃圾回收器
+
+
+[Dialog ID]: 558
+[User]: 讲一下垃圾回收器CMS
+
+
+[Dialog ID]: 559
+[User]: 讲一下G1回收器
+
+
+[Dialog ID]: 560
+[User]: 讲一下并行收集器
+
+
+[Dialog ID]: 561
+[User]: 数据库表如何设计
+
+
+[Dialog ID]: 562
+[User]: 项目中数据库的设计步骤
+
+
+[Dialog ID]: 563
+[User]: 仿牛客网论坛项目的数据库设计以及数据库表的设计
+
+
+[Dialog ID]: 564
+[User]: 讲一下Spring Security进行权限控制
+
+
+[Dialog ID]: 565
+[User]: 讲一下Spring Security的授权
+
+
+[Dialog ID]: 566
+[User]: 讲一下通过配置类来使用Spring Securiy进行授权
+
+
+[Dialog ID]: 567
+[User]: Spring Security实现权限控制在面试时会被问到什么问题
+
+
+[Dialog ID]: 568
+[User]: 注册登录功能在面试的时候会被问到什么
+
+
+[Dialog ID]: 569
+[User]: 使用Spring Email发送邮件
+
+
+[Dialog ID]: 570
+[User]: Spring Email在面试时容易被问到什么问题
+
+
+[Dialog ID]: 571
+[User]: TemplateEngine
+
+
+[Dialog ID]: 572
+[User]: 用户登录功能模块的实现
+
+
+[Dialog ID]: 573
+[User]: 登录功能在面试时可能被问到的问题
+
+
+[Dialog ID]: 574
+[User]: 发布帖子功能在面试时可能会被问到的问题
+
+
+[Dialog ID]: 575
+[User]: String是不可变的，那么StringBuffer和StringBuilder是如何实现可变的呢
+
+
+[Dialog ID]: 576
+[User]: StringBuffer和StringBuilder是如何实现可变的
+
+
+[Dialog ID]: 577
+[User]: HashMap为什么线程不安全
+
+
+[Dialog ID]: 578
+[User]: 1.8之前ConcurrentHashMap支持多少线程同时操作
+
+
+[Dialog ID]: 579
+[User]: 那ConcurrentHashMap是怎么实现线程安全的？
+
+
+[Dialog ID]: 580
+[User]: Java1.8之后concurrenthashmap的线程安全是如何实现的
+
+
+[Dialog ID]: 581
+[User]: 你说ReentrantLock是可重入的，那synchronized是可重入的吗？为什么？
+
+
+[Dialog ID]: 582
+[User]: 知道ThreadLocal吗？介绍一下ThreadLocal的结构
+
+
+[Dialog ID]: 583
+[User]: 介绍一下HashMap
+
+
+[Dialog ID]: 584
+[User]: HashMap的底层原理
+
+
+[Dialog ID]: 585
+[User]: 介绍一下分库分表
+
+
+[Dialog ID]: 586
+[User]: 怎么实现
+
+
+[Dialog ID]: 587
+[User]: 缓存雪崩，击穿，穿透以及处理方式
+
+
+[Dialog ID]: 588
+[User]: redis漏桶算法
+
+
+[Dialog ID]: 589
+[User]: 负载均衡算法
+
+
+[Dialog ID]: 590
+[User]: jvm调优
+
+
+[Dialog ID]: 591
+[User]: 如何查看一个线程执行时间
+
+
+[Dialog ID]: 592
+[User]: 类加载过程
+
+
+[Dialog ID]: 593
+[User]: 类加载机制
+
+
+[Dialog ID]: 594
+[User]: 类加载器
+
+
+[Dialog ID]: 595
+[User]: 讲一下字符串常量池
+
+
+[Dialog ID]: 596
+[User]: 讲一下分配担保机制
+
+
+[Dialog ID]: 597
+[User]: 可达性分析
+
+
+[Dialog ID]: 598
+[User]: 讲一下G1垃圾回收器
+
+
+[Dialog ID]: 599
+[User]: 内存泄漏怎么排查
+
+
+[Dialog ID]: 600
+[User]: 讲一下内存模型
+
+
+[Dialog ID]: 601
+[User]: 讲一下synchronized的锁升级过程
+
+
+[Dialog ID]: 602
+[User]: sychronized的可重入操作是如何实现的
+
+
+[Dialog ID]: 603
+[User]: 讲一下乐观锁和悲观锁
+
+
+[Dialog ID]: 604
+[User]: 讲一下进程和线程
+
+
+[Dialog ID]: 605
+[User]: HashSEt底层原理
+
+
+[Dialog ID]: 606
+[User]: HashMap的底层实现
+
+
+[Dialog ID]: 607
+[User]: HashMap的put()流程
+
+
+[Dialog ID]: 608
+[User]: 使用BlockingQueue实现生产者和消费者模式
+
+
+[Dialog ID]: 609
+[User]: hashmap的put方法的执行流程
+
+
+[Dialog ID]: 610
+[User]: 为什么hashmap是线程不安全的
+
+
+[Dialog ID]: 611
+[User]: 讲一下用户态和内核态
+
+
+[Dialog ID]: 612
+[User]: 为什么要进行重排序
+
+
+[Dialog ID]: 613
+[User]: 为什么会有可见性问题
+
+
+[Dialog ID]: 614
+[User]: 使用java创建一棵树
+
+
+[Dialog ID]: 615
+[User]: 输入一个数组，创建一棵树
+
+
+[Dialog ID]: 616
+[User]: 按顺序遍历nums数组，分别是树的根节点，左子树和右子树。使用java创建这样一颗树
+
+
+[Dialog ID]: 617
+[User]: volatile是否能实现并发
+
+
+[Dialog ID]: 618
+[User]: select * from db where a = 1 and b > 0 如果建立a和b的联合索引，能不能走索引
+
+
+[Dialog ID]: 619
+[User]: 三次握手四次挥手中TIME_WAIT的作用
+
+
+[Dialog ID]: 620
+[User]: 仿牛客网论坛项目，发布帖子功能可能在面试中会被问到什么
+
+
+[Dialog ID]: 621
+[User]: 一瞬间提交140个请求，核心线程数为40，最大线程数为100，请求最大延迟为5ms，平均rt为3ms，如何设计线程池参数降低处理延迟？
+
+
+[Dialog ID]: 622
+[User]: 就这个场景应该怎么设计
+
+
+[Dialog ID]: 623
+[User]: 发布帖子的实现逻辑
+
+
+[Dialog ID]: 624
+[User]: 分页的实现
+
+
+[Dialog ID]: 625
+[User]: 仿牛客网论坛的点赞功能是怎么实现的
+
+
+[Dialog ID]: 626
+[User]: 使用Redis实现点赞功能
+
+
+[Dialog ID]: 627
+[User]: 讲一下多版本并发控制，他的作用是什么
+
+
+[Dialog ID]: 628
+[User]: 讲一下多版本并发控制原理
+
+
+[Dialog ID]: 629
+[User]: 某健身房将举办“开业酬宾”活动，在当天办理会员业务的名单里进行课程抽奖，已知当天共有60人办理会员卡，其中抽到瑜伽课的有40人，抽到器械课的有38人，抽到舞蹈课的有31人，三种课都抽到的有18人，请问办理会员卡的人中，最多有多少人三种课都没抽到
+
+
+[Dialog ID]: 630
+[User]: 赵先生跟赵太太与另外5对夫妻交换礼物;结束后，除赵氏夫妇外的10个人分别跟:10、9、
+8、7、6、4、3、2、1、0个人交换过礼物，已知每个人都不会去跟自己的配偶交换礼物，请问赵先生和赵太太各跟几个人交换过礼物呢?
+
+
+[Dialog ID]: 631
+[User]: 上传图片功能的实现
+
+
+[Dialog ID]: 632
+[User]: 实现上传图片功能
+
+
+[Dialog ID]: 633
+[User]: 实现上传图片功能
+
+
+[Dialog ID]: 634
+[User]: 哈喽
+
+
+[Dialog ID]: 635
+[User]: halo
+
+
+[Dialog ID]: 636
+[User]: 怎么实现上传图片功能
+
+
+[Dialog ID]: 637
+[User]: 怎么实现上传功能
+
+
+[Dialog ID]: 638
+[User]: halo
+
+
+[Dialog ID]: 639
+[User]: halo
+
+
+[Dialog ID]: 640
+[User]: halo
+
+
+[Dialog ID]: 641
+[User]: 你好
+
+
+[Dialog ID]: 642
+[User]: 你看好
+
+
+[Dialog ID]: 643
+[User]: 与诚信有关的成语
+
+
+[Dialog ID]: 644
+[User]: 你好
+
+
+[Dialog ID]: 645
+[User]: mysql的底层数据结构
+
+
+[Dialog ID]: 646
+[User]: 如果有大量数据（万级）需要进行更新操作，怎么保证缓存不一致影响最小
+
+
+[Dialog ID]: 647
+[User]: 假如有成千上百万条数据，内存空间无限大，怎么快速的往HashMap中插入数据？
+
+
+[Dialog ID]: 648
+[User]: 小红每天都要背单词，然后她会把每天记住了多少单词记录下来，并在小红书上打卡当小红背单词时，如果她已经记住了i个单词，且背了一个没有记住的新单词i+1次，则就会记住这个新单词。例如，当她按顺序背["you”"thank”,"thank”]时，她第一次背单词”you"时她就能记住"you”。而由于她已经记住了一个单词，所以需要背两次"thank"才能记住"thank”现在你知道了小红背单词的顺序，请你求出小红今天记住了多少个单词
+输入描述
+第一行一个整数n(1<ns10000)。
+接下来n行，每行一个字符串，保证每个字符串长度不超过 10.
+输出描述
+输出一个整数，表示她记住了多少个单词。用java解决一下
+
+
+[Dialog ID]: 649
+[User]: 这种做法不对
+
+
+[Dialog ID]: 650
+[User]: 小红是小红书的一个博主，她有很多的粉丝，有一些粉丝想让小红出一篇上尾市的旅游攻略。
+上尾市有n个景点，有 m条路线，每个景点的攻略价值是a，要花费h时间浏览，不同景点之间的交通时间为 w。小红最多会选择3个相邻的景点，然后按顺序将景点写进攻略，她需要保证每个景点的浏览时间加上景点之间的交通时间总和不超过，并且使得攻略的价值尽可能大即景点的总价值尽可能大求小红的攻略的最大价值
+输入描述
+第一行输入三个整数n,m,k，含
+义如题目描述所示。
+第二行输入n个整数表示数组 a
+第三行输入n个整数表示数组h
+接下来m行，每行输入三个整数 u,v，w
+表示景点uv之间的交通时间为w。
+输出描述
+输出一个整数表示答案
+用java解决一下
+
+
+[Dialog ID]: 651
+[User]: 小美定义一个01串的权值为:每次操作选择一位取反，使
+4
+得相邻字符都不相等的最小操作次数。
+5	例如，"10001"的权值是1，因为只需要修改一次:对第三	
+个字符取反即可。
+现在小美拿到了一个01串，她希望你求出所有非空连续子串的权值之和，你能帮帮她吗?
+输入描述
+一个仅包含0和1的字符串，长度不超过2000。
+
+输出描述
+所有非空子串的权值和。
+示例1输入10001
+输出
+8
+说明
+长度为2的子串中，有2个"00"的权值是1。长度为3的3个子串权值都是1。长度为4的2个子串权值都是1。长度为5的1个子串权值是1。总权值之和为2+3+2+1=8  请用java 解决一下
+
+
+[Dialog ID]: 652
+[User]: 小美定义一个01串的权值为:每次操作选择一位取反，使得相邻字符都不相等的最小操作次数。
+例如，"10001"的权值是1，因为只需要修改一次:对第三	个字符取反即可。
+现在小美拿到了一个01串，她希望你求出所有非空连续子串的权值之和，你能帮帮她吗?
+输入描述
+一个仅包含0和1的字符串，长度不超过2000。
+
+输出描述
+所有非空子串的权值和。
+示例1输入10001
+输出
+8
+说明
+长度为2的子串中，有2个"00"的权值是1。长度为3的3个子串权值都是1。长度为4的2个子串权值都是1。长度为5的1个子串权值是1。总权值之和为2+3+2+1=8  请用java 解决一下
+
+
+[Dialog ID]: 653
+[User]: 小美拿到了一个数组a，她准备构造一个数组b满足:1、b的每一位都和a对应位置不同2.b的所有元素之和都和a相同。3.b的数组均为正整数。请你告诉小美有多少种构造方式。由于答案过大，请对109-7取模。
+请用java编程
+
+
+[Dialog ID]: 654
+[User]: 小美拿到了一个数组，她每次可以进行如下操作
+选择两个元素，一个加1，另一个减1。
+小美希望若干次操作后，众数的出现次数尽可能多。你能帮她求出最小的操作次数吗?
+众数定义:在一组数据中，出现次数最多的数据，是一组数据中的原数据，而不是相应的次数。一组数据中的众数不止一个
+输入描述
+第一行为一个正整数n，代表数组的大小。
+第二行输入n个正整数ai，代表小美拿到的数组。用Java解决上述问题
+
+
+[Dialog ID]: 655
+[User]: 你为了工作学习过什么技能？将来还会学习什么技能？
+
+
+[Dialog ID]: 656
+[User]: 最吸引我的是，用英文翻译一下
+
+
+[Dialog ID]: 657
+[User]: 大学期间的英文翻译
+
+
+[Dialog ID]: 658
+[User]: 这个职位为什么吸引你？以及你的职业目标是什么？这个问题要怎么回答
+
+
+[Dialog ID]: 659
+[User]: 我的短期目标是不断学习一些新的技能，提升自己解决问题的能力，能够在当前的这个职位上发挥自己的优势，为公司的发展做出贡献。英文翻译
+
+
+[Dialog ID]: 660
+[User]: 我的长期目标是通过不断地积累工作中的经验，希望成为领域专家，和公司的发展目标紧密结合，为公司做贡献。英文翻译
+
+
+[Dialog ID]: 661
+[User]: 有没有帮助过别人的经历、过程是什么、结果怎么样？
+
+
+[Dialog ID]: 662
+[User]: 举个例子呢
+
+
+[Dialog ID]: 663
+[User]: 在和合作过程中产生分歧怎么办？应该怎么做
+
+
+[Dialog ID]: 664
+[User]: 我从事过这样的工作的英文翻译
+
+
+[Dialog ID]: 665
+[User]: 换一种翻译
+
+
+[Dialog ID]: 666
+[User]: 如何解决已有知识解决不了的问题？
+
+
+[Dialog ID]: 667
+[User]: HTTP3.0了解过吗，1.0和2.0呢，TCP和UDP的那个用的多，有什么区别，https为什么安全，怎么实现的
+
+
+[Dialog ID]: 668
+[User]: 为什么用Kafka，架构是什么样的，Broker、Topic、Partition相当于些什么
+
+
+[Dialog ID]: 669
+[User]: HashMap底层原理，链表变红黑树的条件
+
+
+[Dialog ID]: 670
+[User]: 底层链表怎么变的红黑树
+
+
+[Dialog ID]: 671
+[User]: 说一下String内部结构，JDK9及之后的有什么变化
+
+
+[Dialog ID]: 672
+[User]: 那byte数组存的是什么呢
+
+
+[Dialog ID]: 673
+[User]: 本地方法栈作用，都存什么
+
+
+[Dialog ID]: 674
+[User]: OOM的原因
+
+
+[Dialog ID]: 675
+[User]: G1垃圾回收区的原理
+
+
+[Dialog ID]: 676
+[User]: ZCMS垃圾回收器底层
+
+
+[Dialog ID]: 677
+[User]: CMS
+
+
+
+
+Now, please understand the examples and give your response to the task instruction. Remember, only output ```json```!!
+Furthermore, please make sure to think carefully. 
+- When providing chunks, please ensure that every dialog within the same chunk is about the same topic and discusses the same matter.
