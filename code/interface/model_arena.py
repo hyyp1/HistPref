@@ -49,7 +49,7 @@ def align_history(
         entry_id,
         user_ID):
     '''
-    存储用户选择作为一条数据
+    save dialogue
     '''
     user_info = 0
     progress = int(progress.split('/')[0])
@@ -90,7 +90,7 @@ def random_model(model_list):
 
 def init_system(user_ID):
     '''
-    初始化测评界面
+    initialization
     '''
     with open(user_info_path+f"/{user_ID}.txt","r",encoding='utf-8') as f:
         user_info = int(f.read())
